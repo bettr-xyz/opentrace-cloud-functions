@@ -15,7 +15,8 @@ export function https(
     .runWith(runtimeOpt)
     .region(...config.regions)
     .https.onCall(async (data, context) => {
-      const uid = await config.authenticator.authenticate(data, context);
+      // const uid = await config.authenticator.authenticate(data, context);
+      const uid = data.uid; // forgo authenticator, receive uid from request
 
       return handler(uid, data, context);
     });

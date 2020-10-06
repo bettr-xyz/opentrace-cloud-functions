@@ -11,14 +11,20 @@ const TEMPID_SIZE = UID_SIZE + TIME_SIZE * 2;
 const IV_SIZE = 16;
 const AUTHTAG_SIZE = 16;
 
-const getTempIDs = async (uid: string) => {
+const getTempIDs = async (uid: string, data: any) => {
+  let tempLean = parseInt(data.lean);
+  let lean = tempLean ? tempLean : 0;
+
+  let tempBatchSize = parseInt(data.batchSize);
+  let batchSize = (tempBatchSize && tempBatchSize > 0) ? tempBatchSize : config.tempID.batchSize;
+
   console.log('getTempIDs:', 'uid', uid);
 
   const encryptionKey = await getEncryptionKey();
 
   const tempIDs = await Promise.all(
-    [...Array(config.tempID.batchSize).keys()].map(
-      async (i) => generateTempId(encryptionKey, uid, i)
+    [...Array(batchSize).keys()].map(
+      async (i) => generateTempId(encryptionKey, uid, i, lean)
     )
   );
 
@@ -30,7 +36,7 @@ const getTempIDs = async (uid: string) => {
   }
 };
 
-async function generateTempId(encryptionKey: Buffer, uid: string, i: number) {
+async function generateTempId(encryptionKey: Buffer, uid: string, i: number, lean: number) {
   // allow the first message to be valid a minute earlier
   const start = moment().unix() + 3600 * config.tempID.validityPeriod * i - 60;
   const expiry = start + 3600 * config.tempID.validityPeriod;
@@ -49,10 +55,16 @@ async function generateTempId(encryptionKey: Buffer, uid: string, i: number) {
 
   const tempID = encodedData.toString('base64');
 
-  return {
-    tempID: tempID,
-    startTime: start,
-    expiryTime: expiry,
+  if (lean) {
+    return {
+      tempID: tempID,
+    }
+  } else {
+    return {
+      tempID: tempID,
+      startTime: start,
+      expiryTime: expiry,
+    }
   }
 }
 
